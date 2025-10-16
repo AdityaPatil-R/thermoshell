@@ -1,4 +1,9 @@
-# %% Def. functions for mesh, length, BC, and plot.
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import List, Callable, Tuple, Dict
+from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
+from mpl_toolkits.mplot3d import Axes3D
 
 def load_mesh(filename):
     nodeXYZ      = []
@@ -51,6 +56,7 @@ def load_mesh(filename):
 
     return nodeXYZ, Connectivity, Triangles
 
+
 def fun_edge_lengths(nodeXYZ: np.ndarray,
                          Connectivity: np.ndarray) -> np.ndarray:
     """
@@ -80,6 +86,7 @@ def fun_edge_lengths(nodeXYZ: np.ndarray,
 
     return edge_lengths
 
+
 def new_fig(num=None, figsize=(6,6), label_fmt='Fig. {n}',
             label_pos=(0.01, 1.00), **subplot_kw):
     """
@@ -105,6 +112,7 @@ def new_fig(num=None, figsize=(6,6), label_fmt='Fig. {n}',
         va='top'
     )
     return fig, ax
+
 
 def plot_truss_3d(q, connectivity, NP_total=None, title=None,
                   figsize=(6,6), show_labels=True):
@@ -171,6 +179,7 @@ def plot_truss_3d(q, connectivity, NP_total=None, title=None,
     plt.show()
     return ax
 
+
 def plot_truss_2d(q, connectivity, NP_total=None, title=None, figsize=(6,6),show_labels=True):
     """
     Plot a 2D truss given nodal DOFs `q` and an edge list `connectivity`.
@@ -235,298 +244,165 @@ def plot_truss_2d(q, connectivity, NP_total=None, title=None, figsize=(6,6),show
     return ax
 
 
-# %% Def. functions Dihedral angle.
+def plot_thermal_strain_edges(
+    node_coords: np.ndarray,
+    connectivity: np.ndarray,
+    epsilon_th: np.ndarray,
+    title: str = None,
+    figsize: tuple = (6,6),
+    cmap: str = 'viridis'
+):
+    """
+    Plot a 2D truss mesh with each edge colored by its thermal strain.
 
-def signedAngle(u = None,v = None,n = None):
-    # This function calculates the signed angle between two vectors, "u" and "v",
-    # using an optional axis vector "n" to determine the direction of the angle.
-    #
-    # Parameters:
-    #   u: numpy array-like, shape (3,), the first vector.
-    #   v: numpy array-like, shape (3,), the second vector.
-    #   n: numpy array-like, shape (3,), the axis vector that defines the plane
-    #      in which the angle is measured. It determines the sign of the angle.
-    #
-    # Returns:
-    #   angle: float, the signed angle (in radians) from vector "u" to vector "v".
-    #          The angle is positive if the rotation from "u" to "v" follows
-    #          the right-hand rule with respect to the axis "n", and negative otherwise.
-    #
-    # The function works by:
-    # 1. Computing the cross product "w" of "u" and "v" to find the vector orthogonal
-    #    to both "u" and "v".
-    # 2. Calculating the angle between "u" and "v" using the arctan2 function, which
-    #    returns the angle based on the norm of "w" (magnitude of the cross product)
-    #    and the dot product of "u" and "v".
-    # 3. Using the dot product of "n" and "w" to determine the sign of the angle.
-    #    If this dot product is negative, the angle is adjusted to be negative.
-    #
-    # Example:
-    #   signedAngle(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))
-    #   This would return a positive angle (π/2 radians), as the rotation
-    #   from the x-axis to the y-axis is counterclockwise when viewed along the z-axis.
-    w = np.cross(u,v)
-    angle = np.arctan2( np.linalg.norm(w), np.dot(u,v) )
-    if (np.dot(n,w) < 0):
-        angle = - angle
+    Parameters
+    ----------
+    node_coords : (Nnodes,3) array
+        The nodal coordinates [x,y,z] (we only use x,y).
+    connectivity : (Nedges,3) array
+        Each row [eid, node_i, node_j].  We assume eid runs 0..Nedges-1.
+    epsilon_th : (Nedges,) array
+        Thermal strain assigned to each edge.
+    title : str
+        Plot title.
+    figsize : tuple
+        Figure size.
+    cmap : str
+        A Matplotlib colormap name.
+    """
+    # Extract x,y
+    x = node_coords[:,0]
+    y = node_coords[:,1]
 
-    return angle
+    # Build segment list and corresponding strain values
+    segments = []
+    values   = []
+    for eid, n0, n1 in connectivity.astype(int):
+        segments.append([(x[n0], y[n0]), (x[n1], y[n1])])
+        values.append(epsilon_th[eid])
+    values = np.array(values)
 
-def mmt(matrix):
-    return matrix + matrix.T
+    # Create a LineCollection: one line per edge
+    lc = LineCollection(segments,
+                        array=values,
+                        cmap=plt.get_cmap(cmap),
+                        linewidths=2)
 
-#          x2
-#          /\
-#         /  \
-#      e1/    \e3
-#       /  t0  \
-#      /        \
-#     /A1  e0  A3\
-#   x0------------x1
-#     \A2      A4/
-#      \   t1   /
-#       \      /
-#      e2\    /e4
-#         \  /
-#          \/
-#          x3
-#
-#  Edge orientation: e0,e1,e2 point away from x0
-#                       e3,e4 point away from x1
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.add_collection(lc)
+    ax.autoscale()            # adjust view to the data
+    ax.set_aspect('equal')    # equal x/y scales
 
-def getTheta(x0, x1 = None, x2 = None, x3 = None):
+    # add colorbar
+    cbar = fig.colorbar(lc, ax=ax, label='Thermal strain εᵗʰ')
 
-    if np.size(x0) == 12:  # Allow another type of input where x0 contains all the info
-      x1 = x0[3:6]
-      x2 = x0[6:9]
-      x3 = x0[9:12]
-      x0 = x0[0:3]
+    # annotate if you like
+    if title:
+        ax.set_title(title)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
 
-    m_e0 = x1 - x0
-    m_e1 = x2 - x0
-    m_e2 = x3 - x0
-
-    n0 = np.cross(m_e0, m_e1)
-    n1 = np.cross(m_e2, m_e0)
-
-    # Calculate the signed angle using the provided function
-    theta = signedAngle(n0, n1, m_e0)
-
-    return theta
-
-# %% Def. functions: bending dihedral angle theta, gradient d(theta)/dx, hessian d^2(theta)/dx^2.
-
-def gradTheta(x0, x1 = None, x2 = None, x3 = None):
-
-    if np.size(x0) == 12:  # Allow another type of input where x0 contains all the info
-      x1 = x0[3:6]
-      x2 = x0[6:9]
-      x3 = x0[9:12]
-      x0 = x0[0:3]
-
-    m_e0 = x1 - x0
-    m_e1 = x2 - x0
-    m_e2 = x3 - x0
-    m_e3 = x2 - x1
-    m_e4 = x3 - x1
-
-    m_cosA1 = np.dot(m_e0, m_e1) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e1))
-    m_cosA2 = np.dot(m_e0, m_e2) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e2))
-    m_cosA3 = -np.dot(m_e0, m_e3) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e3))
-    m_cosA4 = -np.dot(m_e0, m_e4) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e4))
-
-    m_sinA1 = np.linalg.norm(np.cross(m_e0, m_e1)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e1))
-    m_sinA2 = np.linalg.norm(np.cross(m_e0, m_e2)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e2))
-    m_sinA3 = -np.linalg.norm(np.cross(m_e0, m_e3)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e3))
-    m_sinA4 = -np.linalg.norm(np.cross(m_e0, m_e4)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e4))
-
-    m_nn1 = np.cross(m_e0, m_e3)
-    m_nn1 = m_nn1 / np.linalg.norm(m_nn1)
-    m_nn2 = -np.cross(m_e0, m_e4)
-    m_nn2 = m_nn2 / np.linalg.norm(m_nn2)
-
-    m_h1 = np.linalg.norm(m_e0) * m_sinA1
-    m_h2 = np.linalg.norm(m_e0) * m_sinA2
-    m_h3 = -np.linalg.norm(m_e0) * m_sinA3  # CORRECTION
-    m_h4 = -np.linalg.norm(m_e0) * m_sinA4  # CORRECTION
-    m_h01 = np.linalg.norm(m_e1) * m_sinA1
-    m_h02 = np.linalg.norm(m_e2) * m_sinA2
-
-    # Initialize the gradient
-    gradTheta = np.zeros(12)
-
-    gradTheta[0:3] = m_cosA3 * m_nn1 / m_h3 + m_cosA4 * m_nn2 / m_h4
-    gradTheta[3:6] = m_cosA1 * m_nn1 / m_h1 + m_cosA2 * m_nn2 / m_h2
-    gradTheta[6:9] = -m_nn1 / m_h01
-    gradTheta[9:12] = -m_nn2 / m_h02
-
-    return gradTheta
-
-def hessTheta(x0, x1 = None, x2 = None, x3 = None):
-
-    if np.size(x0) == 12:  # Allow another type of input where x0 contains all the info
-      x1 = x0[3:6]
-      x2 = x0[6:9]
-      x3 = x0[9:12]
-      x0 = x0[0:3]
-
-    m_e0 = x1 - x0
-    m_e1 = x2 - x0
-    m_e2 = x3 - x0
-    m_e3 = x2 - x1
-    m_e4 = x3 - x1
-
-    m_cosA1 = np.dot(m_e0, m_e1) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e1))
-    m_cosA2 = np.dot(m_e0, m_e2) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e2))
-    m_cosA3 = -np.dot(m_e0, m_e3) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e3))
-    m_cosA4 = -np.dot(m_e0, m_e4) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e4))
-
-    m_sinA1 = np.linalg.norm(np.cross(m_e0, m_e1)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e1))
-    m_sinA2 = np.linalg.norm(np.cross(m_e0, m_e2)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e2))
-    m_sinA3 = -np.linalg.norm(np.cross(m_e0, m_e3)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e3))
-    m_sinA4 = -np.linalg.norm(np.cross(m_e0, m_e4)) / (np.linalg.norm(m_e0) * np.linalg.norm(m_e4))
-
-    m_nn1 = np.cross(m_e0, m_e3)
-    m_nn1 /= np.linalg.norm(m_nn1)
-    m_nn2 = -np.cross(m_e0, m_e4)
-    m_nn2 /= np.linalg.norm(m_nn2)
-
-    m_h1 = np.linalg.norm(m_e0) * m_sinA1
-    m_h2 = np.linalg.norm(m_e0) * m_sinA2
-    m_h3 = -np.linalg.norm(m_e0) * m_sinA3
-    m_h4 = -np.linalg.norm(m_e0) * m_sinA4
-    m_h01 = np.linalg.norm(m_e1) * m_sinA1
-    m_h02 = np.linalg.norm(m_e2) * m_sinA2
-
-    # Gradient of Theta (as an intermediate step)
-    grad_theta = np.zeros((12, 1))
-    grad_theta[0:3] = (m_cosA3 * m_nn1 / m_h3 + m_cosA4 * m_nn2 / m_h4).reshape(-1, 1)
-    grad_theta[3:6] = (m_cosA1 * m_nn1 / m_h1 + m_cosA2 * m_nn2 / m_h2).reshape(-1, 1)
-    grad_theta[6:9] = (-m_nn1 / m_h01).reshape(-1, 1)
-    grad_theta[9:12] = (-m_nn2 / m_h02).reshape(-1, 1)
-
-    # Intermediate matrices for Hessian
-    m_m1 = np.cross(m_nn1, m_e1) / np.linalg.norm(m_e1)
-    m_m2 = -np.cross(m_nn2, m_e2) / np.linalg.norm(m_e2)
-    m_m3 = -np.cross(m_nn1, m_e3) / np.linalg.norm(m_e3)
-    m_m4 = np.cross(m_nn2, m_e4) / np.linalg.norm(m_e4)
-    m_m01 = -np.cross(m_nn1, m_e0) / np.linalg.norm(m_e0)
-    m_m02 = np.cross(m_nn2, m_e0) / np.linalg.norm(m_e0)
-
-    # Hessian matrix components
-    M331 = m_cosA3 / (m_h3 ** 2) * np.outer(m_m3, m_nn1)
-    M311 = m_cosA3 / (m_h3 * m_h1) * np.outer(m_m1, m_nn1)
-    M131 = m_cosA1 / (m_h1 * m_h3) * np.outer(m_m3, m_nn1)
-    M3011 = m_cosA3 / (m_h3 * m_h01) * np.outer(m_m01, m_nn1)
-    M111 = m_cosA1 / (m_h1 ** 2) * np.outer(m_m1, m_nn1)
-    M1011 = m_cosA1 / (m_h1 * m_h01) * np.outer(m_m01, m_nn1)
-
-    M442 = m_cosA4 / (m_h4 ** 2) * np.outer(m_m4, m_nn2)
-    M422 = m_cosA4 / (m_h4 * m_h2) * np.outer(m_m2, m_nn2)
-    M242 = m_cosA2 / (m_h2 * m_h4) * np.outer(m_m4, m_nn2)
-    M4022 = m_cosA4 / (m_h4 * m_h02) * np.outer(m_m02, m_nn2)
-    M222 = m_cosA2 / (m_h2 ** 2) * np.outer(m_m2, m_nn2)
-    M2022 = m_cosA2 / (m_h2 * m_h02) * np.outer(m_m02, m_nn2)
-
-    B1 = 1 / np.linalg.norm(m_e0) ** 2 * np.outer(m_nn1, m_m01)
-    B2 = 1 / np.linalg.norm(m_e0) ** 2 * np.outer(m_nn2, m_m02)
-
-    N13 = 1 / (m_h01 * m_h3) * np.outer(m_nn1, m_m3)
-    N24 = 1 / (m_h02 * m_h4) * np.outer(m_nn2, m_m4)
-    N11 = 1 / (m_h01 * m_h1) * np.outer(m_nn1, m_m1)
-    N22 = 1 / (m_h02 * m_h2) * np.outer(m_nn2, m_m2)
-    N101 = 1 / (m_h01 ** 2) * np.outer(m_nn1, m_m01)
-    N202 = 1 / (m_h02 ** 2) * np.outer(m_nn2, m_m02)
-
-    # Initialize Hessian of Theta
-    hess_theta = np.zeros((12, 12))
-
-    hess_theta[0:3, 0:3] = mmt(M331) - B1 + mmt(M442) - B2
-    hess_theta[0:3, 3:6] = M311 + M131.T + B1 + M422 + M242.T + B2
-    hess_theta[0:3, 6:9] = M3011 - N13
-    hess_theta[0:3, 9:12] = M4022 - N24
-    hess_theta[3:6, 3:6] = mmt(M111) - B1 + mmt(M222) - B2
-    hess_theta[3:6, 6:9] = M1011 - N11
-    hess_theta[3:6, 9:12] = M2022 - N22
-    hess_theta[6:9, 6:9] = -mmt(N101)
-    hess_theta[9:12, 9:12] = -mmt(N202)
-
-    # Make the Hessian symmetric
-    hess_theta[3:6, 0:3] = hess_theta[0:3, 3:6].T
-    hess_theta[6:9, 0:3] = hess_theta[0:3, 6:9].T
-    hess_theta[9:12, 0:3] = hess_theta[0:3, 9:12].T
-    hess_theta[6:9, 3:6] = hess_theta[3:6, 6:9].T
-    hess_theta[9:12, 3:6] = hess_theta[3:6, 9:12].T
-
-    return hess_theta
-
-
-def test_gradTheta():
-  # Randomly choose four points
-  x0 = np.random.rand(3)
-  x1 = np.random.rand(3)
-  x2 = np.random.rand(3)
-  x3 = np.random.rand(3)
-
-  # Combine the points into a single array
-  X_0 = np.concatenate([x0, x1, x2, x3])
-
-  # Analytical gradient of theta
-  grad = gradTheta(X_0)
-
-  # Numerical gradient calculation
-  gradNumerical = np.zeros(12)
-  dx = 1e-6
-  theta_0 = getTheta(X_0)
-
-  # Loop through each element to compute the numerical gradient
-  for c in range(12):
-      X_0dx = X_0.copy()
-      X_0dx[c] += dx
-      theta_dx = getTheta(X_0dx)
-      gradNumerical[c] = (theta_dx - theta_0) / dx
-
-  # Plotting the analytical vs numerical gradients
-  plt.figure()
-  plt.plot(range(1, len(grad) + 1), grad, 'ro', label='Analytical')
-  plt.plot(range(1, len(grad) + 1), gradNumerical, 'b^', label='Numerical')
-  plt.xlabel('Index Number')
-  plt.ylabel('Gradient of theta, F_{i}')
-  plt.legend()
-  plt.grid(True)
-  plt.show()
-
-def test_hessTheta():
-    # Randomly choose four points
-    x0 = np.random.rand(3)
-    x1 = np.random.rand(3)
-    x2 = np.random.rand(3)
-    x3 = np.random.rand(3)
-
-    # Assemble the four vectors into a long vector
-    X_0 = np.concatenate([x0, x1, x2, x3])
-
-    # Analytical gradient and Hessian of theta
-    grad_theta_0 = gradTheta(X_0)  # Replace with your gradTheta function
-    hess = hessTheta(X_0)          # Replace with your hessTheta function
-
-    # Numerical Hessian calculation
-    hess_numerical = np.zeros((12, 12))
-    dx = 1e-6
-
-    for c in range(12):
-        X_0dx = X_0.copy()
-        X_0dx[c] += dx
-        grad_theta_dx = gradTheta(X_0dx)
-        dHess = (grad_theta_dx - grad_theta_0) / dx
-        hess_numerical[c, :] = dHess
-
-    # Plot the results
-    plt.figure()
-    plt.plot(np.arange(len(hess.flatten())), hess.flatten(), 'ro', label='Analytical')
-    plt.plot(np.arange(len(hess_numerical.flatten())), hess_numerical.flatten(), 'b^', label='Numerical')
-    plt.xlabel('Index Number')
-    plt.ylabel('Hessian of theta, J_{ij}')
-    plt.legend()
-    plt.grid(True)
     plt.show()
+    return ax
+
+
+def plot_thermal_strain_edges_CustomRange(
+    node_coords: np.ndarray,
+    connectivity: np.ndarray,
+    epsilon_th: np.ndarray,
+    title: str = None,
+    figsize: tuple = (6,6),
+    cmap: str = 'viridis',
+    vmin: float = None,
+    vmax: float = None
+):
+    # Extract x,y
+    x = node_coords[:,0]
+    y = node_coords[:,1]
+
+    # Build segment list and corresponding strain values
+    segments = []
+    values   = []
+    for eid, n0, n1 in connectivity.astype(int):
+        segments.append([(x[n0], y[n0]), (x[n1], y[n1])])
+        values.append(epsilon_th[eid])
+    values = np.array(values)
+
+    # Create a Normalize instance if limits are provided
+    norm = Normalize(vmin=vmin, vmax=vmax)
+
+    # Create a LineCollection: one line per edge
+    lc = LineCollection(
+        segments,
+        array=values,
+        cmap=plt.get_cmap(cmap),
+        norm=norm,
+        linewidths=2
+    )
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.add_collection(lc)
+    ax.autoscale()            # adjust view to the data
+    ax.set_aspect('equal')    # equal x/y scales
+
+    # add colorbar
+    cbar = fig.colorbar(lc, ax=ax, label='value')
+
+    # annotate if you like
+    if title:
+        ax.set_title(title)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+
+    plt.show()
+    return ax
+
+
+def fun_reaction_force_RightEnd(X0_4columns, R_history, step=-1, axis=1):
+    # Compute the total vertical reaction at the right end of the beam.
+   
+    coords = X0_4columns[:, axis]
+    xmax   = coords.max()
+    
+    right_nodes = np.where(np.isclose(coords, xmax, atol=1e-8))[0]
+    dof_z = right_nodes * 3 + 2
+
+    reaction_sum = np.sum(R_history[step, dof_z])
+    return reaction_sum, right_nodes, dof_z
+
+
+def fun_EBBeam_reaction_force(delta, E, h, X0_4columns, axis_length=1, axis_width=2):
+    # Compute Euler–Bernoulli reaction force for a cantilever beam under end deflection.
+
+    # Beam length
+    coords_L = X0_4columns[:, axis_length]
+    L = coords_L.max() - coords_L.min()
+    # Beam width
+    coords_b = X0_4columns[:, axis_width]
+    b = coords_b.max() - coords_b.min()
+    
+    I = b * h**3 / 12.0
+    # Point-load formula: δ = P L^3 / (3 E I) -> P = 3 E I δ / L^3
+    P = 3.0 * E * I * delta / L**3
+    return P
+
+
+def fun_deflection_RightEnd(X0_4columns, Q_history, step=-1, axis=1):
+    # Compute the vertical deflections at the right end of the beam.
+
+    # extract the coordinate along the beam axis
+    coords = X0_4columns[:, axis]
+    xmax   = coords.max()
+    
+    # find the nodes at the right tip
+    right_nodes = np.where(np.isclose(coords, xmax, atol=1e-8))[0]
+    # global z‐DOF indices for those nodes
+    dof_z = right_nodes * 3 + 2
+    
+    q_step = Q_history[step]
+    X0_flat = X0_4columns[:,1:4].ravel()
+    
+    # compute deflection = current_z - reference_z
+    deflections = q_step[dof_z] - X0_flat[dof_z]
+    
+    return deflections, right_nodes, dof_z
