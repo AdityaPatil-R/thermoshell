@@ -14,9 +14,13 @@ from collections import defaultdict, Counter
 import config as cfg
 
 # Geometry and Plotting
-from geometry import (
-    load_mesh, fun_edge_lengths, new_fig, plot_truss_3d,
-    plot_thermal_strain_edges, plot_thermal_strain_edges_CustomRange
+from geometry.mesh_io import load_mesh
+from geometry.mesh_props import fun_edge_lengths
+from viz.figure_setup import new_fig 
+from viz.mesh_plots import plot_truss_3d
+from viz.thermal_plots import (
+    plot_thermal_strain_edges, 
+    plot_thermal_strain_edges_CustomRange
 )
 
 # Elasticity and Patterning
