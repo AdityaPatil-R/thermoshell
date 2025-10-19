@@ -1,5 +1,3 @@
-# thermoshell2/main_runner.py
-
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -13,7 +11,7 @@ from collections import defaultdict, Counter
 # --- Import modules from the new package structure ---
 import config as cfg
 
-# Geometry and Plotting
+# Geometry and Plotting (Already Correctly Updated)
 from geometry.mesh_io import load_mesh
 from geometry.mesh_props import fun_edge_lengths
 from viz.figure_setup import new_fig 
@@ -23,7 +21,7 @@ from viz.thermal_plots import (
     plot_thermal_strain_edges_CustomRange
 )
 
-# Elasticity and Patterning
+# Elasticity and Patterning (Unchanged)
 from elasticity import (
     bilayer_flexural_rigidity, 
     assign_thermal_strains_contour, 
@@ -34,10 +32,10 @@ from elasticity import (
     whole_peanut_region
 )
 
-# Finite Element Assembly
-from finite_element import ElasticGHEdgesCoupledThermal
+# Finite Element Assembly (MODIFIED)
+from assembly.assemblers import ElasticGHEdgesCoupledThermal
 
-# Solver components
+# Solver components (Unchanged)
 from solver.boundary_conditions import (
     BoundaryConditions3D, 
     fun_BC_3D_hold_center, 
