@@ -3,7 +3,7 @@ from typing import List, Callable, Tuple, Dict
 
 # Imports from other modules (needed by record_step)
 from elasticity import get_strain_stretch_edge2D3D # Needed for strain logging
-from bending import getTheta
+from analysis.bending_model.geometry import getTheta
 
 class timeStepper3D:
     def __init__(self, massVector, dt, qtol, maxIter, g, boundaryCondition, elasticModel, X0):

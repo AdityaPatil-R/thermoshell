@@ -42,7 +42,7 @@ from solver.boundary_conditions import (
     fun_BC_peanut
 )
 from solver.time_stepper import timeStepper3D_static, record_step 
-from bending import getTheta 
+from analysis.bending_model.geometry import getTheta
 
 
 start = time.perf_counter()

@@ -8,14 +8,21 @@ from elasticity import (
     grad_and_hess_strain_stretch_edge3D
 )
 
-# From bending.py
-from bending import (
-    gradEb_hessEb_Shell, 
+from analysis.bending_model.geometry import (
     getTheta, 
     gradTheta, 
-    hessTheta, 
+    hessTheta
+)
+
+# Differential Stretch (from analysis/bending_model/stretch_diff.py)
+from analysis.bending_model.stretch_diff import (
     fun_DEps_grad_hess, 
-    fun_DEps_grad_hess_thermal, 
+    fun_DEps_grad_hess_thermal
+)
+
+# Energy Models (from analysis/bending_model/energy.py)
+from analysis.bending_model.energy import (
+    gradEb_hessEb_Shell, 
     fun_coupled_Ebend_grad_hess, 
     fun_coupled_Ebend_grad_hess_thermal
 )
