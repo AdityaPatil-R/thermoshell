@@ -489,7 +489,7 @@ mdict = {
     'theta_history': theta_history, 'time_log': time_log, 'step_log': step_log, 
     'q_old': q_old, 'fixedNodes': fixedNodes,
 }
-sio.savemat('output_deps_thermal_WithGravity.mat', mdict, do_compression=True)
+sio.savemat('../../output/output_deps_thermal_WithGravity.mat', mdict, do_compression=True)
 print("Data saved at ", ", ".join(mdict.keys()))
 
 
@@ -563,7 +563,7 @@ mdict.update({
     'extra_records': extra_records
 })
 
-sio.savemat('output_deps_thermal_NoG.mat', mdict, do_compression=True)
+sio.savemat('../../output/output_deps_thermal_NoG.mat', mdict, do_compression=True)
 print("Data saved at ", ", ".join(mdict.keys()))
 
 end = time.perf_counter()
