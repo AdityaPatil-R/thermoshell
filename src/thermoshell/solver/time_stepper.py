@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Callable, Tuple, Dict
 
 # Imports from other modules (needed by record_step)
-from elasticity import get_strain_stretch_edge2D3D # Needed for strain logging
+from analysis.material.unit_laws import get_strain_stretch_edge2D3D # Needed for strain logging
 from analysis.bending_model.geometry import getTheta
 
 class timeStepper3D:

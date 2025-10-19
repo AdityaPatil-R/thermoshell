@@ -21,14 +21,25 @@ from viz.thermal_plots import (
     plot_thermal_strain_edges_CustomRange
 )
 
-# Elasticity and Patterning (Unchanged)
-from elasticity import (
-    bilayer_flexural_rigidity, 
-    assign_thermal_strains_contour, 
+from analysis.material.bilayer import (
+    bilayer_flexural_rigidity
+)
+
+from analysis.material.assignment import (
+    assign_thermal_strains_contour
+)
+
+from analysis.material.assignment import (
     assign_youngs_modulus,
-    assign_youngs_modulus_v3,
+    assign_youngs_modulus_v3
+)
+
+from analysis.patterning.regions import (
     circle_six_arms_region, 
-    square_X_region,
+    square_X_region
+)
+
+from analysis.patterning.complex import (
     whole_peanut_region
 )
 

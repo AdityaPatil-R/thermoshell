@@ -1,7 +1,7 @@
 import numpy as np
 
 # From elasticity.py
-from elasticity import (
+from analysis.material.unit_laws import (
     fun_grad_hess_energy_stretch_linear_elastic_edge, 
     fun_grad_hess_energy_stretch_linear_elastic_edge_thermal,
     get_strain_stretch_edge2D3D, 

@@ -1,6 +1,8 @@
 import numpy as np
 from typing import List, Callable, Tuple, Dict
-from elasticity import get_strain_stretch_edge2D3D, grad_and_hess_strain_stretch_edge3D
+from analysis.material.unit_laws import get_strain_stretch_edge2D3D, grad_and_hess_strain_stretch_edge3D
+
+
 
 def fun_DEps_grad_hess(xloc: np.ndarray,
                        nodes: List[int],
