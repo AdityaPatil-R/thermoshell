@@ -63,14 +63,32 @@ start = time.perf_counter()
 # ==============================================================================
 
 def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument('--mesh', type=int, help="which mesh to load")
-    p.add_argument('--eps-thermal', type=float, help="thermal strain")
-    p.add_argument('--print', dest='do_print', action='store_true')
-    p.add_argument('--plot', dest='do_plot', action='store_true')
-    p.add_argument('--test', dest='do_test', action='store_true')
-    p.add_argument('--gravity', type=int, help="0=no gravity, 1=gravity")
-    p.add_argument('--fluctuate', type=int, help="0=no, 1=yes")
+    p = argparse.ArgumentParser(description="Run a thermoshell simulation.")
+    
+    p.add_argument('--mesh', type=int, help="Which mesh to load (overrides cfg.iMesh)")
+    p.add_argument('--eps-thermal', type=float, help="Thermal strain (overrides cfg.eps_thermal)")
+    p.add_argument('--print', dest='do_print', action='store_true', help="Enable verbose printing (overrides cfg.iPrint)")
+    p.add_argument('--plot', dest='do_plot', action='store_true', help="Enable plotting (overrides cfg.iPlot)")
+    p.add_argument('--test', dest='do_test', action='store_true', help="Enable test mode (overrides cfg.iTest)")
+    p.add_argument('--gravity', action='store_true', help="Enable gravity (sets cfg.iGravity=1)")
+    p.add_argument('--fluctuate', action='store_true', help="Enable fluctuations (sets cfg.iFluc=1)")
+    
+    
+    # File I/O Control
+    p.add_argument('--outdir', type=str, help="Directory to save .mat files (default: ../../output)")
+    p.add_argument('--run-name', type=str, help="Prefix for output .mat files (default: output_deps_thermal)")
+    
+    # Physics/Material Tuning
+    p.add_argument('--ks-factor', type=float, help="Scaling factor for stretching stiffness (overrides cfg.FactorKs)")
+    p.add_argument('--kb-factor', type=float, help="Scaling factor for bending stiffness (overrides cfg.FactorKb)")
+    
+    # Solver Control
+    p.add_argument('--total-time', type=float, help="Total sim time for thermal actuation (overrides cfg.totalTime)")
+    p.add_argument('--max-iter', type=int, help="Max Newton iterations per step (overrides cfg.maxIter)")
+    
+    # Flow Control
+    p.add_argument('--skip-gravity-ramp', action='store_true', help="Skip the final gravity ramp-down phase")
+
     return p.parse_args()
 
 if __name__ == "__main__":
