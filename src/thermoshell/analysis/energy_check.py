@@ -1,7 +1,8 @@
 import numpy as np
 # Import the required local functions
-from elasticity import get_strain_stretch_edge2D3D
-from bending import getTheta, fun_DEps_grad_hess, fun_DEps_grad_hess_thermal
+from analysis.material.unit_laws import get_strain_stretch_edge2D3D
+from analysis.bending_model.geometry import getTheta
+from analysis.bending_model.stretch_diff import fun_DEps_grad_hess, fun_DEps_grad_hess_thermal
 from assembly.assemblers import ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal
 
 def fun_total_system_energy_coupled(
@@ -107,3 +108,74 @@ def fun_total_system_energy_coupled_thermal(
         E   += 0.5 * kb_i * diff*diff
 
     return E
+
+def test_fun_total_energy_grad_hess_thermal(
+        plt,
+        model: ElasticGHEdgesCoupledThermal,
+        q0: np.ndarray,
+        iplot: int = 1,
+        eps: float = 1e-6
+    ) -> None:
+    """
+    Finite‐difference check of ∇E and ∇²E for the full coupled energy.
+
+    Prints out relative Frobenius‐norm, L_inf, RMS errors, and—if plot=True—draws
+    comparisons of analytic vs FD for both gradient and Hessian entries.
+    """
+    nd = model.ndof
+
+    # --- analytic ---
+    G0, H0 = model.computeGradientHessian(q0)
+    
+    # --- FD gradient via central differences ---
+    G_fd = np.zeros(nd)
+    for i in range(nd):
+        dq = np.zeros_like(q0); dq[i] = eps
+        Ep = fun_total_system_energy_coupled_thermal(q0 + dq, model)
+        Em = fun_total_system_energy_coupled_thermal(q0 - dq, model)
+        G_fd[i] = (Ep - Em) / (2*eps)
+
+    # --- FD Hessian via forward diff of gradient ---
+    H_fd = np.zeros((nd, nd))
+    for j in range(nd):
+        dq = np.zeros_like(q0); dq[j] = eps
+        Gp, _ = model.computeGradientHessian(q0 + dq)
+        H_fd[:, j] = (Gp - G0) / eps
+
+    # --- reporting ---
+    def report(A, B, name):
+        rel = np.linalg.norm(A - B) / np.linalg.norm(A)
+        inf = np.max(np.abs(A - B))
+        rms = np.linalg.norm(A - B) / np.sqrt(A.size)
+        print(f"{name} error:")
+        print(f"  relative Frobenius = {rel:.3e}")
+        print(f"  L_inf max abs     = {inf:.3e}")
+        print(f"  RMS               = {rms:.3e}\n")
+
+    print("test_total_energy_grad_hess")
+    print("=== total‐energy gradient check ===")
+    report(G0, G_fd, "∇E")
+
+    print("=== total‐energy Hessian check ===")
+    report(H0, H_fd, "∇²E")
+
+    # --- plotting ---
+    iplot=1
+    if iplot==1:
+        plt.figure(figsize=(10,4))
+        plt.subplot(1,2,1)
+        plt.plot(G0,     'ro', label='analytic')
+        plt.plot(G_fd,   'b.', label='FD')
+        plt.title('Gradient ∇E of whole system w thermal strains')
+        plt.xlabel('DOF index')
+        plt.legend()
+
+        plt.subplot(1,2,2)
+        plt.plot(H0.flatten(), 'ro', label='analytic')
+        plt.plot(H_fd.flatten(), 'b.', label='FD')
+        plt.title('Hessian ∇²E of whole system w thermal strains')
+        plt.xlabel('entry index')
+        plt.legend()
+
+        plt.tight_layout()
+        plt.show()
