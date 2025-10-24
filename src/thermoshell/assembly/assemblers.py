@@ -9,9 +9,9 @@ from analysis.bending_model.geometry import (getTheta,
                                              gradTheta, 
                                              hessTheta)
 
-from analysis.bending_model.energy import (gradEb_hessEb_Shell, 
-                                           fun_coupled_Ebend_grad_hess, 
-                                           fun_coupled_Ebend_grad_hess_thermal)
+from analysis.bending_model.energy import (calculate_pure_bending_grad_hess, 
+                                           calculate_coupled_bending_grad_hess, 
+                                           calculate_coupled_bending_grad_hess_thermal)
 
 class ElasticGHBase:
     """
@@ -193,7 +193,7 @@ class ElasticGHEdges(ElasticGHBase):
             nodes = [n0, n1, oppA, oppB]
             ind = np.concatenate([[3*n + i for i in range(3)] for n in nodes])
             x_local = q[ind]
-            dG_b, dH_b = gradEb_hessEb_Shell(x0=x_local, 
+            dG_b, dH_b = calculate_pure_bending_grad_hess(x0=x_local, 
                                              theta_bar=self.theta_bar, 
                                              kb=self.kb)
             G[ind]              += dG_b
@@ -258,7 +258,7 @@ class ElasticGHEdgesCoupled(ElasticGHCoupledBase):
             ind = np.concatenate([[3*n+i for i in range(3)] for n in nodes])
             x_local = q[ind]
             kb_i = self.kb_array[h_idx]
-            dG_b, dH_b = gradEb_hessEb_Shell(x0=x_local, 
+            dG_b, dH_b = calculate_pure_bending_grad_hess(x0=x_local, 
                                              theta_bar=self.theta_bar, 
                                              kb=kb_i)
             G[ind]              += dG_b
@@ -321,7 +321,7 @@ class ElasticGHEdgesCoupled(ElasticGHCoupledBase):
             nodes = [n0, n1, oppA, oppB]
             inds  = sum([[3*n + i for i in range(3)] for n in nodes], [])
             xloc  = q[inds]
-            dG_bh, dH_bh = fun_coupled_Ebend_grad_hess(xloc, 
+            dG_bh, dH_bh = calculate_coupled_bending_grad_hess(xloc, 
                                                        nodes, 
                                                        self._edge_length, 
                                                        self.beta, 
@@ -405,7 +405,7 @@ class ElasticGHEdgesCoupledThermal(ElasticGHCoupledBase):
             nodes   = [n0, n1, oppA, oppB]
             ind     = np.concatenate([[3*n + i for i in range(3)] for n in nodes])
             x_local = q[ind]
-            dG_b, dH_b = gradEb_hessEb_Shell(x0=x_local, 
+            dG_b, dH_b = calculate_pure_bending_grad_hess(x0=x_local, 
                                              theta_bar=self.theta_bar, 
                                              kb=kb_i)
             G[ind]              += dG_b
@@ -466,7 +466,7 @@ class ElasticGHEdgesCoupledThermal(ElasticGHCoupledBase):
             inds  = sum([[3*n+i for i in range(3)] for n in nodes], [])
             xloc  = q[inds]
 
-            dG_bh, dH_bh = fun_coupled_Ebend_grad_hess(xloc, 
+            dG_bh, dH_bh = calculate_coupled_bending_grad_hess(xloc, 
                                                        nodes, 
                                                        self._edge_length, 
                                                        self.beta, 
@@ -483,7 +483,7 @@ class ElasticGHEdgesCoupledThermal(ElasticGHCoupledBase):
             inds  = sum([[3*n + i for i in range(3)] for n in nodes], [])
             xloc  = q[inds]
 
-            dG_bh, dH_bh = fun_coupled_Ebend_grad_hess_thermal(xloc, 
+            dG_bh, dH_bh = calculate_coupled_bending_grad_hess_thermal(xloc, 
                                                                nodes, 
                                                                self._edge_length, 
                                                                self.beta, 
