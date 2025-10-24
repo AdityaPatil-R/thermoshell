@@ -1,8 +1,8 @@
 import numpy as np
 
-def signedAngle(u = None,
-                v = None,
-                n = None):
+def signedAngle(u=None,
+                v=None,
+                n=None):
     # This function calculates the signed angle between two vectors, "u" and "v"
     # using an optional axis vector "n" to determine the direction of the angle.
     #
@@ -40,14 +40,16 @@ def signedAngle(u = None,
     else:
         return angle
 
+
 def mmt(matrix):
     return matrix + matrix.T
 
+
 def getTheta(x0, 
-             x1 = None, 
-             x2 = None, 
-             x3 = None):
-    if np.size(x0) == 12:  # Allow another type of input where x0 contains all the info
+             x1=None, 
+             x2=None, 
+             x3=None):
+    if np.size(x0) == 12:  # Allow input where x0 contains all the info
         x1 = x0[3:6]
         x2 = x0[6:9]
         x3 = x0[9:12]
@@ -60,10 +62,11 @@ def getTheta(x0,
     n0 = np.cross(m_e0, m_e1)
     n1 = np.cross(m_e2, m_e0)
 
-    # Calculate the signed angle using the provided function
+    # Calculate the signed angle
     theta = signedAngle(n0, n1, m_e0)
 
     return theta
+
 
 def gradTheta(x0, 
               x1 = None, 
@@ -114,9 +117,9 @@ def gradTheta(x0,
     return gradTheta
 
 def hessTheta(x0, 
-              x1 = None, 
-              x2 = None, 
-              x3 = None):
+              x1=None, 
+              x2=None, 
+              x3=None):
     if np.size(x0) == 12: 
         x1 = x0[3:6]
         x2 = x0[6:9]
