@@ -1,56 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple
 
-def assign_thermal_strains(
-    node_coords: np.ndarray,
-    connectivity: np.ndarray,
-    eps_thermal: float,
-    region_fn: Callable[[np.ndarray], np.ndarray],
-    inside: bool = True
-) -> np.ndarray:
-    """
-    Assign thermal strain to each edge whose midpoint lies (inside/outside)
-    the region defined by `region_fn`.
-
-    Parameters
-    ----------
-    node_coords : (Nnodes,3) array
-        Coordinates of each node.
-    connectivity : (Nedges,3) array
-        Each row [eid, n0, n1].  We assume eid runs 0..Nedges‑1.
-    eps_thermal : float
-        Thermal strain to assign.
-    region_fn : callable
-        Given mids=(Nedges,3) array of midpoints, returns a boolean array
-        of length Nedges: True where the edge should be “hot”.
-    inside : bool
-        If True, assign eps_thermal where region_fn is True;
-        if False, assign where region_fn is False (i.e. outside).
-
-    Returns
-    -------
-    epsilon_th : (Nedges,) array
-        Thermal strain for each edge.
-    """
-    # 1) midpoints for every edge
-    #    connectivity[:,1:3] are the two node‐indices per edge
-    n0 = connectivity[:,1].astype(int)
-    n1 = connectivity[:,2].astype(int)
-    mids = 0.5*(node_coords[n0] + node_coords[n1])  # shape (Nedges,3)
-
-    # 2) evaluate region test
-    mask = region_fn(mids, node_xyz)  # boolean array length Nedges
-
-    # 3) fill
-    epsilon_th = np.zeros(connectivity.shape[0], dtype=float)
-    if inside:
-        epsilon_th[mask] = eps_thermal
-    else:
-        epsilon_th[~mask] = eps_thermal
-
-    return epsilon_th
-
-
 def assign_thermal_strains_contour(
     node_coords: np.ndarray,
     connectivity: np.ndarray,
@@ -62,7 +12,7 @@ def assign_thermal_strains_contour(
     Like assign_thermal_strains, but replaces the flat step
     by a smooth ramp that goes from 0 at the region boundary
     up to eps_thermal at the point farthest from that boundary
-    (and vice‐versa if inside=False).
+    (and vice-versa if inside=False).
 
     Parameters
     ----------
@@ -145,7 +95,7 @@ def assign_thermal_strains_LinearTraisition(
     """
     Assign thermal strain to each edge whose midpoint lies inside (or outside)
     the region defined by `region_fn`, but instead of a flat eps_thermal we
-    do a linear ramp from eps_max at the mesh mid‐height line to eps_min at
+    do a linear ramp from eps_max at the mesh mid-height line to eps_min at
     the top/bottom edges.
 
     Parameters
@@ -157,7 +107,7 @@ def assign_thermal_strains_LinearTraisition(
     eps_min : float
       thermal strain at the top/bottom of the mesh (t=1)
     eps_max : float
-      thermal strain on the mid‐height line (t=0)
+      thermal strain on the mid-height line (t=0)
     region_fn : callable
       given mids=(Nedges,3) array returns boolean mask
     inside : bool
@@ -296,7 +246,7 @@ def assign_thermal_strains_EllipticTransition(
     region_fn : callable
       given mids=(Nedges,3) returns boolean mask
     ellipse_axes : (a,b)
-      semi‐axes of the ellipse in x‐ and y‐directions
+      semi-axes of the ellipse in x- and y-directions
     inside : bool
       if True, apply ramp inside mask; else apply ramp outside
     """
@@ -346,138 +296,6 @@ def assign_thermal_strains_EllipticTransition(
     return epsilon_th
 
 
-def assign_youngs_modulus(
-    node_coords: np.ndarray,
-    connectivity: np.ndarray,
-    region_fn: Callable[[np.ndarray], np.ndarray],
-    circle_center: Tuple[float,float],
-    circle_radius: float,
-    Ysoft: float,
-    Yhard: float,
-    Yratio: float,
-    inside: bool = True
-) -> np.ndarray:
-    """
-    Build a (Nedges,) array of Young's moduli:
-      Ysoft inside the region, Yhard outside (or vice versa).
-    """
-    # 1) compute midpoints
-    n0  = connectivity[:,1].astype(int)
-    n1  = connectivity[:,2].astype(int)
-    mids = 0.5*(node_coords[n0] + node_coords[n1])   # shape (Nedges,3)
-
-    # 2) test region
-    mask = region_fn(mids)   # boolean (Nedges,)
-
-    # 3) piecewise assign *with* a radial ramp inside the region
-    Y = np.empty(connectivity.shape[0], dtype=float)
-
-    # --- compute radial distances from the circle center ---
-    # You must know your circle_center=(cx,cy) and circle_radius=R
-    cx, cy = circle_center
-    R = circle_radius
-
-    dx = mids[:,0] - cx
-    dy = mids[:,1] - cy
-    r  = np.sqrt(dx*dx + dy*dy)
-
-    # normalized radius [0..1]
-    r_norm = np.clip(r / R, 0.0, 1.0)
-
-    # define the two soft‐moduli endpoints
-    Ysoft_R  = Yratio * Ysoft    # at r = R
-    Ysoft_r = Ysoft           # at r = 0
-    Yhard_R  = Yratio * Yhard
-    Yhard_r = Yhard
-
-    if inside:
-        Y[mask]  = Ysoft_r + (Ysoft_R - Ysoft_r) * r_norm[mask]
-        # outside: hard material
-        Y[~mask] = Yhard_r + (Yhard_R - Yhard_r) * r_norm[~mask]
-    else:
-        # inside: hard material
-        Y[mask]  = Yhard_r + (Yhard_R - Yhard_r) * r_norm[mask]
-        Y[~mask] = Ysoft_r + (Ysoft_R - Ysoft_r) * r_norm[~mask]
-
-    return Y
-
-
-def assign_youngs_modulus_v2(
-    node_coords: np.ndarray,
-    connectivity: np.ndarray,
-    region_fn: Callable[[np.ndarray], np.ndarray],
-    circle_center: Tuple[float,float],
-    circle_radius: float,
-    Ysoft: float,
-    Yhard: float,
-    Yratio: float,
-    inside: bool = True,
-    *,
-    x_thresh: float = None,
-    hard_factor: float = 1.0
-) -> np.ndarray:
-    """
-    Build a (Nedges,) array of Young's moduli with two effects:
-      1) a soft/hard radial ramp about circle_center (as before),
-      2) anywhere x > x_thresh, force Y = hard_factor * Yhard_r.
-
-    Parameters
-    ----------
-    node_coords : (Nnodes,3)
-    connectivity: (Nedges,3)
-    region_fn   : mids -> boolean (mask)
-    circle_center: (cx,cy)
-    circle_radius: R
-    Ysoft, Yhard, Yratio: ramp endpoints
-    inside      : apply inside‐mask ramp if True, else complement
-    x_thresh    : if not None, x > x_thresh ⇒ override
-    hard_factor : factor to multiply Yhard_r by in override zone
-    """
-    # 1) compute midpoints
-    n0   = connectivity[:,1].astype(int)
-    n1   = connectivity[:,2].astype(int)
-    mids = 0.5*(node_coords[n0] + node_coords[n1])  # (Nedges,3)
-    x    = mids[:,0]
-
-    # 2) mask & midpoint‐radius for ramp
-    mask  = region_fn(mids)   # (Nedges,)
-    cx, cy = circle_center
-    dx = mids[:,0] - cx
-    dy = mids[:,1] - cy
-    r  = np.sqrt(dx*dx + dy*dy)
-    r_norm = np.clip(r / circle_radius, 0.0, 1.0)
-
-    # 3) soft/hard endpoints
-    Ysoft_r = Ysoft
-    Ysoft_R = Ysoft * Yratio
-    Yhard_r = Yhard
-    Yhard_R = Yhard * Yratio
-
-    # 4) build the ramp arrays
-    soft_ramp = Ysoft_r + (Ysoft_R - Ysoft_r) * r_norm
-    hard_ramp = Yhard_r + (Yhard_R - Yhard_r) * r_norm
-
-    # 5) allocate and fill
-    Y = np.empty_like(r)
-    if inside:
-        Y[mask]  = soft_ramp[mask]
-        Y[~mask] = hard_ramp[~mask]
-    else:
-        Y[mask]  = hard_ramp[mask]
-        Y[~mask] = soft_ramp[~mask]
-
-    # 6) override to super‐hard on the right side
-    if x_thresh is not None:
-        if inside:
-            override = (~mask) & (x > x_thresh)
-        else:
-            override = (mask) & (x > x_thresh)
-
-        Y[override] = hard_factor * Yhard_r
-
-    return Y
-
-
 def assign_youngs_modulus_v3(
     node_coords: np.ndarray,
     connectivity: np.ndarray,
@@ -506,7 +324,7 @@ def assign_youngs_modulus_v3(
     circle_center: (cx,cy)
     circle_radius: R
     Ysoft, Yhard, Yratio: ramp endpoints
-    inside      : apply inside‐mask ramp if True, else complement
+    inside      : apply inside-mask ramp if True, else complement
     x_thresh    : if not None, x > x_thresh ⇒ override
     hard_factor : factor to multiply Yhard_r by in override zone
     """

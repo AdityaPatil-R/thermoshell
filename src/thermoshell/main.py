@@ -19,7 +19,6 @@ from viz.thermal_plots import (
 from analysis.material.bilayer import bilayer_flexural_rigidity
 from analysis.material.assignment import (
     assign_thermal_strains_contour,
-    assign_youngs_modulus,
     assign_youngs_modulus_v3
 )
 from analysis.material.fluctuations import add_boundary_fluctuations
@@ -491,7 +490,7 @@ if iMesh in (1, 3):
         inside=False,
     )
 
-    Y_array = assign_youngs_modulus(
+    Y_array = assign_youngs_modulus_v3(
         node_xyz,
         ConnectivityMatrix_line,
         region_fn=region_fn,
@@ -1174,7 +1173,7 @@ mdict = {
 }
 
 # save data with compression
-sio.savemat('../../output/output_deps_thermal_NoG.mat', mdict, do_compression=True)
+sio.savemat('../../data/output_deps_thermal_NoG.mat', mdict, do_compression=True)
 print("Data saved at ", ", ".join(mdict.keys()))
 
 
