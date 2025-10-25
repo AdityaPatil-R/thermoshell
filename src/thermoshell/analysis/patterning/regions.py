@@ -1,16 +1,17 @@
 import numpy as np
 from typing import Tuple
 
-def rect_region(mids: np.ndarray, node_xyz) -> np.ndarray:
+def rect_region(mids: np.ndarray, *, 
+                x_min: float, x_max: float, 
+                y_min: float, y_max: float) -> np.ndarray:
     x, y = mids[:,0], mids[:,1]
-    return (x >= x_min) & (x <= x_max) \
-        & (y >= y_min) & (y <= y_max)
+    return (x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)
 
 
 def circle_region(mids: np.ndarray,
                   node_xyz) -> np.ndarray:
     """
-    True for edge‑midpoints within the circle of radius^2=r2 about (cx,cy).
+    True for edge-midpoints within the circle of radius^2=r2 about (cx,cy).
     """
     x_coords = node_xyz[:, 0]
     y_coords = node_xyz[:, 1]
@@ -26,7 +27,7 @@ def circle_region(mids: np.ndarray,
 
 def bowl_region(mids: np.ndarray, node_xyz) -> np.ndarray:
     """
-    Return True for edge‐midpoints in a central disk OR in every other
+    Return True for edge-midpoints in a central disk OR in every other
     wedge of the surrounding ring, producing a starburst pattern.
     """
     # 1) compute mesh center once
@@ -72,7 +73,7 @@ def circle_six_arms_region(
     arm_half_length: float
 ) -> np.ndarray:
     """
-    Return True for edge‐midpoints lying inside:
+    Return True for edge-midpoints lying inside:
       1) a small circle of radius `circle_radius` around `circle_center`, OR
       2) any of six rectangular "arms" of half-width `arm_half_width`
          and half-length `arm_half_length`, radiating at 0°, 60°, 120°, ….
@@ -109,10 +110,10 @@ def square_X_region(
     arm_half_length: float
 ) -> np.ndarray:
     """
-    Return True for edge‐midpoints lying inside:
+    Return True for edge-midpoints lying inside:
       1) a small circle of radius `circle_radius` around `circle_center`, OR
-      2) two diagonal rectangular “arms” (an X shape) of half‐width
-         `arm_half_width` and half‐length `arm_half_length` at ±45°.
+      2) two diagonal rectangular “arms” (an X shape) of half-width
+         `arm_half_width` and half-length `arm_half_length` at ±45°.
     """
     # translate into local (X,Y) about the circle center
     cx, cy = circle_center
