@@ -1,8 +1,7 @@
 import numpy as np
 # Import the required local functions
 from analysis.material.unit_laws import get_strain_stretch_edge2D3D
-from analysis.bending_model.geometry import getTheta
-from analysis.bending_model.stretch_diff import fun_DEps_grad_hess, fun_DEps_grad_hess_thermal
+from analysis.bending_model.geometry import getTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
 from assembly.assemblers import ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal
 
 def fun_total_system_energy_coupled(
@@ -47,7 +46,7 @@ def fun_total_system_energy_coupled(
         # just need θ and Δε here
         θ   = getTheta(xloc)
         # compute Δε exactly as in _assemble_bending_coupled
-        Deps, _, _ = fun_DEps_grad_hess(
+        Deps, _, _ = calculate_stretch_difference_grad_hess(
             xloc, nodes, model._edge_length
         )
 
@@ -100,8 +99,8 @@ def fun_total_system_energy_coupled_thermal(
         θ, gθ, Hθ = None, None, None
         # just need θ and Δε here
         θ   = getTheta(xloc)
-        # Deps, _, _ = fun_DEps_grad_hess(xloc, nodes, model._edge_length)
-        Deps, _, _ = fun_DEps_grad_hess_thermal(xloc, nodes, model._edge_length, model.eps_th, model.edge_dict)
+        # Deps, _, _ = calculate_stretch_difference_grad_hess(xloc, nodes, model._edge_length)
+        Deps, _, _ = calculate_stretch_difference_grad_hess_thermal(xloc, nodes, model._edge_length, model.eps_th, model.edge_dict)
 
         kb_i = model.kb_array[h_idx]
         diff = θ - model.beta * Deps

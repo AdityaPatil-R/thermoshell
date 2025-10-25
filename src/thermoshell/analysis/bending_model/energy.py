@@ -1,7 +1,6 @@
 import numpy as np
 from typing import List, Callable, Tuple, Dict
-from .geometry import getTheta, gradTheta, hessTheta 
-from .stretch_diff import fun_DEps_grad_hess, fun_DEps_grad_hess_thermal
+from .geometry import getTheta, gradTheta, hessTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
 
 def calculate_pure_bending_energy(x0, 
                                   x1=None, 
@@ -94,7 +93,7 @@ def calculate_coupled_bending_grad_hess(xloc: np.ndarray,
     Hθ = hessTheta(xloc)
 
     # The Δε, its grad & hess in the desired order
-    Deps, GDeps, HDeps = fun_DEps_grad_hess(xloc, nodes, edge_length_fn)
+    Deps, GDeps, HDeps = calculate_stretch_difference_grad_hess(xloc, nodes, edge_length_fn)
 
     # Form force-like and stiffness-like pieces
     f_h = θ - beta * Deps 
@@ -134,7 +133,7 @@ def calculate_coupled_bending_grad_hess_thermal(xloc: np.ndarray,
     kb_angle  = Factor_kb*kb if θ > 0 else kb
     
     # The Δε, its grad & hess in the desired order
-    Deps, GDeps, HDeps = fun_DEps_grad_hess_thermal(xloc, nodes, edge_length_fn, eps_th, edge_dict)
+    Deps, GDeps, HDeps = calculate_stretch_difference_grad_hess_thermal(xloc, nodes, edge_length_fn, eps_th, edge_dict)
 
     # Form force‐like and stiffness‐like pieces
     f_h = θ - beta * Deps 
