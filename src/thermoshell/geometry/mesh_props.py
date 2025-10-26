@@ -1,6 +1,6 @@
 import numpy as np
 
-def fun_edge_lengths(nodeXYZ: np.ndarray,
+def calculate_edge_lengths(nodeXYZ: np.ndarray,
                          Connectivity: np.ndarray) -> np.ndarray:
     """
     Compute the Euclidean length of each edge.

@@ -2,8 +2,8 @@ import numpy as np
 from typing import List, Callable, Tuple, Dict
 
 # Imports from other modules (needed by record_step)
-from analysis.material.unit_laws import get_strain_stretch_edge2D3D # Needed for strain logging
-from analysis.bending_model.geometry import getTheta
+from src.thermoshell.analysis.material.unit_laws import get_strain_stretch_edge2D3D # Needed for strain logging
+from src.thermoshell.analysis.bending_model.geometry import getTheta
 
 class timeStepper3D:
     def __init__(self, massVector, dt, qtol, maxIter, g, boundaryCondition, elasticModel, X0):
@@ -55,14 +55,6 @@ class timeStepper3D:
         for i in range(self.N):
             sl = slice(3*i, 3*i+3)
             self.Fg[sl] = self.massVector[sl] * self.g
-
-    def beforeTimeStep(self) -> None:
-        # Take care of any business that should be done BEFORE a time step.
-        pass
-
-    def afterTimeStep(self) -> None:
-        # Take care of any business that should be done AFTER a time step.
-        return
 
     def simulate(self, q_guess, q_old, u_old, a_old):
         """
@@ -171,14 +163,6 @@ class timeStepper3D_static:
         for i in range(self.N):
             sl = slice(3*i, 3*i+3)
             self.Fg[sl] = self.massVector[sl] * self.g
-
-    def beforeTimeStep(self) -> None:
-        # Take care of any business that should be done BEFORE a time step.
-        pass
-
-    def afterTimeStep(self) -> None:
-        # Take care of any business that should be done AFTER a time step.
-        return
 
     def simulate(self, q_guess, q_old, u_old, a_old):
         """
@@ -296,14 +280,6 @@ class timeStepper3D_static_gravity:
         for i in range(self.N):
             sl = slice(3*i, 3*i+3)
             self.Fg[sl] = self.massVector[sl] * self.g
-
-    def beforeTimeStep(self) -> None:
-        # Take care of any business that should be done BEFORE a time step.
-        pass
-
-    def afterTimeStep(self) -> None:
-        # Take care of any business that should be done AFTER a time step.
-        return
 
     def simulate(self, q_guess, q_old, u_old, a_old):
         """
@@ -438,55 +414,3 @@ def record_step(
         # compute signed dihedral
         theta = getTheta(x0, x1, x2, x3)
         theta_history[step, j] = theta
-
-
-
-def record_step_old(
-    step: int,
-    q_new: np.ndarray,
-    elastic_model,
-    connectivity: np.ndarray,
-    L0: np.ndarray,
-    EA: float,
-    Q_history: np.ndarray,
-    R_history: np.ndarray,
-    strain_history: np.ndarray,
-    stress_history: np.ndarray
-):
-    """
-    Record displacements, reactions, strains and stresses at time‐step `step`.
-
-    Parameters
-    ----------
-    step : int
-      time‐step index (0…n_steps)
-    q_new : (ndof,) array
-      converged DOF vector at this step
-    elastic_model : object
-      must implement computeGradientHessian(q)->(gradE, hessE)
-    connectivity : (Nedges,3) int‐array
-      each row [eid, n0, n1]
-    L0 : (Nedges,) array
-      reference lengths per edge
-    EA : float
-      axial stiffness = E·A
-    Q_history, R_history : (n_steps+1,ndof) arrays
-      pre‐allocated
-    strain_history, stress_history : (n_steps+1,Nedges) arrays
-      pre‐allocated
-    """
-    # 1) displacement
-    Q_history[step] = q_new
-
-    # 2) reaction = gradient of elastic energy
-    gradE, _       = elastic_model.computeGradientHessian(q_new)
-    R_history[step] = gradE
-
-    # 3) strains & stresses
-    for i, edge in enumerate(connectivity):
-        _, n0, n1 = edge
-        p0 = q_new[3*n0 : 3*n0+3]
-        p1 = q_new[3*n1 : 3*n1+3]
-        eps = get_strain_stretch_edge2D3D(p0, p1, L0[i])
-        strain_history[step, i] = eps
-        stress_history[step, i] = EA * eps

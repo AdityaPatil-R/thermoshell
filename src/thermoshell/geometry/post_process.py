@@ -1,6 +1,6 @@
 import numpy as np
 
-def fun_reaction_force_RightEnd(X0_4columns, R_history, step=-1, axis=1):
+def calculate_right_end_reaction(X0_4columns, R_history, step=-1, axis=1):
     # Compute the total vertical reaction at the right end of the beam.
    
     coords = X0_4columns[:, axis]
@@ -13,7 +13,7 @@ def fun_reaction_force_RightEnd(X0_4columns, R_history, step=-1, axis=1):
     return reaction_sum, right_nodes, dof_z
 
 
-def fun_EBBeam_reaction_force(delta, E, h, X0_4columns, axis_length=1, axis_width=2):
+def calculate_eb_beam_reaction(delta, E, h, X0_4columns, axis_length=1, axis_width=2):
     # Compute Euler–Bernoulli reaction force for a cantilever beam under end deflection.
 
     # Beam length
@@ -29,7 +29,7 @@ def fun_EBBeam_reaction_force(delta, E, h, X0_4columns, axis_length=1, axis_widt
     return P
 
 
-def fun_deflection_RightEnd(X0_4columns, Q_history, step=-1, axis=1):
+def calculate_right_end_deflection(X0_4columns, Q_history, step=-1, axis=1):
     # Compute the vertical deflections at the right end of the beam.
 
     # extract the coordinate along the beam axis

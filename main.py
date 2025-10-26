@@ -3,46 +3,39 @@ import matplotlib.pyplot as plt
 import time
 import scipy.io as sio
 import argparse
-from typing import Dict, Tuple, List, Callable
+from typing import Tuple, Callable
 from functools import partial
+from collections import Counter, defaultdict
 from itertools import combinations
-from collections import defaultdict, Counter
 
-from geometry.mesh_io import load_mesh
-from geometry.mesh_props import fun_edge_lengths
-from viz.figure_setup import new_fig
-from viz.mesh_plots import plot_truss_3d
-from viz.thermal_plots import (
+from src.thermoshell.geometry.mesh_io import load_mesh
+from src.thermoshell.geometry.mesh_props import calculate_edge_lengths 
+from src.thermoshell.viz.figure_setup import new_fig
+from src.thermoshell.viz.mesh_plots import plot_truss_3d 
+from src.thermoshell.viz.thermal_plots import (
     plot_thermal_strain_edges,
     plot_thermal_strain_edges_CustomRange
 )
-from analysis.material.bilayer import bilayer_flexural_rigidity
-from analysis.material.assignment import (
+from src.thermoshell.analysis.material.bilayer import bilayer_flexural_rigidity
+from src.thermoshell.analysis.material.assignment import (
     assign_thermal_strains_contour,
-    assign_youngs_modulus_v3
+    assign_youngs_modulus_v3 
 )
-from analysis.material.fluctuations import add_boundary_fluctuations
-from analysis.patterning.regions import (
+from src.thermoshell.analysis.material.fluctuations import add_boundary_fluctuations
+from src.thermoshell.analysis.patterning.regions import (
     circle_six_arms_region,
     square_X_region
 )
-from analysis.patterning.complex import whole_peanut_region
-from analysis.energy_check import test_fun_total_energy_grad_hess_thermal
-from assembly.assemblers import (
-    ElasticGHEdges, 
-    ElasticGHEdgesCoupled, 
-    ElasticGHEdgesCoupledThermal, 
-    test_ElasticGHEdges, 
-    FDM_ElasticGHEdges, 
-    FDM_ElasticGHEdgesCoupled, 
-    FDM_ElasticGHEdgesCoupledThermal)
-from solver.boundary_conditions import (
+from src.thermoshell.analysis.patterning.complex import whole_peanut_region
+from src.thermoshell.assembly.assemblers import (
+    ElasticGHEdgesCoupledThermal,
+    )
+from src.thermoshell.solver.boundary_conditions import (
     BoundaryConditions3D,
     fun_BC_3D_hold_center,
-    fun_BC_peanut
+    fun_BC_peanut 
 )
-from solver.time_stepper import timeStepper3D_static, record_step
-from analysis.bending_model.geometry import getTheta
+from src.thermoshell.solver.time_stepper import timeStepper3D_static, record_step
 
 start = time.perf_counter()
 
@@ -81,9 +74,9 @@ if __name__ == "__main__":
     print("CLI overrides:", {k: v for k, v in vars(args).items() if v is not None and v is not False})
 
 mesh_files = {
-    1: '../../data/mesh_python_circle_970nodes_scale100mm.txt',
-    2: '../../data/mesh_rectangle_scaled_1215nodes_scale100mm_155mm.txt',
-    3: '../../data/mesh_python_square_388nodes_scale100mm.txt',
+    1: 'data/mesh_python_circle_970nodes_scale100mm.txt',
+    2: 'data/mesh_rectangle_scaled_1215nodes_scale100mm_155mm.txt',
+    3: 'data/mesh_python_square_388nodes_scale100mm.txt',
 }
 
 if iMesh == 1:
@@ -176,7 +169,7 @@ print(f"Number of triangles: {Ntriangles}")
 
 
 print("Reference edge lengths:")
-L0 = fun_edge_lengths(X0_4columns, ConnectivityMatrix_line)
+L0 = calculate_edge_lengths(X0_4columns, ConnectivityMatrix_line)
 # for i, length in enumerate(L0):
 #    print(f"L0_{i} = {length:.6f}")
 
@@ -1067,7 +1060,7 @@ mdict = {
 }
 
 # save data with compression
-sio.savemat('../../output/output_deps_thermal_WithGravity.mat', mdict, do_compression=True)
+sio.savemat('output/output_deps_thermal_WithGravity.mat', mdict, do_compression=True)
 print("Data saved at ", ", ".join(mdict.keys()))
 
 
@@ -1173,7 +1166,7 @@ mdict = {
 }
 
 # save data with compression
-sio.savemat('../../data/output_deps_thermal_NoG.mat', mdict, do_compression=True)
+sio.savemat('data/output_deps_thermal_NoG.mat', mdict, do_compression=True)
 print("Data saved at ", ", ".join(mdict.keys()))
 
 
