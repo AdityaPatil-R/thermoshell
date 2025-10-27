@@ -16,6 +16,12 @@ from src.thermoshell.viz.thermal_plots import (
     plot_thermal_strain_edges,
     plot_thermal_strain_edges_CustomRange
 )
+from src.thermoshell.assembly.assemblers import (
+    ElasticGHEdgesCoupledThermal,
+    FDM_ElasticGHEdges, 
+    FDM_ElasticGHEdgesCoupled,
+    FDM_ElasticGHEdgesCoupledThermal
+)
 from src.thermoshell.material.bilayer import bilayer_flexural_rigidity
 from src.thermoshell.material.assignment import (
     assign_thermal_strains_contour,
@@ -36,6 +42,8 @@ from src.thermoshell.solver.boundary_conditions import (
     fun_BC_peanut 
 )
 from src.thermoshell.solver.time_stepper import timeStepper3D_static, record_step
+from tests.test_assemblers import test_fun_total_energy_grad_hess_thermal, test_ElasticGHEdges
+
 
 start = time.perf_counter()
 
