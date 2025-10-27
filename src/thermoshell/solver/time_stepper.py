@@ -52,9 +52,7 @@ class timeStepper3D:
 
     def makeWeight(self):
         """Compute gravity‐induced forces per DOF."""
-        for i in range(self.N):
-            sl = slice(3*i, 3*i+3)
-            self.Fg[sl] = self.massVector[sl] * self.g
+        self.Fg = np.tile(self.g, self.N) * self.massVector
 
     def simulate(self, q_guess, q_old, u_old, a_old):
         """
@@ -74,8 +72,7 @@ class timeStepper3D:
 
         # 1) Initialize and impose Dirichlet BCs
         q_new = q_guess.copy()
-        for dof, u_val in zip(self.bc.fixedIndices, self.bc.fixedDOFs):
-            q_new[dof] = X0[dof] + u_val
+        q_new[self.bc.fixedIndices] = self.X0[self.bc.fixedIndices] + self.bc.fixedDOFs
             
         # for k in range(len(bc.fixedIndices)):
         #     q_new[bc.fixedIndices[k]] = bc.fixedDOFs[k]
@@ -107,7 +104,7 @@ class timeStepper3D:
             
         # new velocities and accelerations
         u_new = (q_new - q_old)/dt
-        a_new = (inertiaF + gradE - Fg)/M
+        a_new = R/M
         return q_new, u_new, a_new, (error < self.qtol)
         
 
@@ -160,9 +157,7 @@ class timeStepper3D_static:
 
     def makeWeight(self):
         """Compute gravity‐induced forces per DOF."""
-        for i in range(self.N):
-            sl = slice(3*i, 3*i+3)
-            self.Fg[sl] = self.massVector[sl] * self.g
+        self.Fg = np.tile(self.g, self.N) * self.massVector
 
     def simulate(self, q_guess, q_old, u_old, a_old):
         """
@@ -182,8 +177,7 @@ class timeStepper3D_static:
 
         # 1) Initialize and impose Dirichlet BCs
         q_new = q_guess.copy()
-        for dof, u_val in zip(self.bc.fixedIndices, self.bc.fixedDOFs):
-            q_new[dof] = X0[dof] + u_val
+        q_new[self.bc.fixedIndices] = self.X0[self.bc.fixedIndices] + self.bc.fixedDOFs
             
         # for k in range(len(bc.fixedIndices)):
         #     q_new[bc.fixedIndices[k]] = bc.fixedDOFs[k]
@@ -277,9 +271,7 @@ class timeStepper3D_static_gravity:
 
     def makeWeight(self):
         """Compute gravity‐induced forces per DOF."""
-        for i in range(self.N):
-            sl = slice(3*i, 3*i+3)
-            self.Fg[sl] = self.massVector[sl] * self.g
+        self.Fg = np.tile(self.g, self.N) * self.massVector
 
     def simulate(self, q_guess, q_old, u_old, a_old):
         """
@@ -299,8 +291,7 @@ class timeStepper3D_static_gravity:
 
         # 1) Initialize and impose Dirichlet BCs
         q_new = q_guess.copy()
-        for dof, u_val in zip(self.bc.fixedIndices, self.bc.fixedDOFs):
-            q_new[dof] = X0[dof] + u_val
+        q_new[self.bc.fixedIndices] = self.X0[self.bc.fixedIndices] + self.bc.fixedDOFs
             
         # for k in range(len(bc.fixedIndices)):
         #     q_new[bc.fixedIndices[k]] = bc.fixedDOFs[k]
