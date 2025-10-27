@@ -16,17 +16,17 @@ from src.thermoshell.viz.thermal_plots import (
     plot_thermal_strain_edges,
     plot_thermal_strain_edges_CustomRange
 )
-from src.thermoshell.analysis.material.bilayer import bilayer_flexural_rigidity
-from src.thermoshell.analysis.material.assignment import (
+from src.thermoshell.material.bilayer import bilayer_flexural_rigidity
+from src.thermoshell.material.assignment import (
     assign_thermal_strains_contour,
     assign_youngs_modulus_v3 
 )
-from src.thermoshell.analysis.material.fluctuations import add_boundary_fluctuations
-from src.thermoshell.analysis.patterning.regions import (
+from src.thermoshell.material.fluctuations import add_boundary_fluctuations
+from src.thermoshell.patterning.regions import (
     circle_six_arms_region,
     square_X_region
 )
-from src.thermoshell.analysis.patterning.complex import whole_peanut_region
+from src.thermoshell.patterning.complex import whole_peanut_region
 from src.thermoshell.assembly.assemblers import (
     ElasticGHEdgesCoupledThermal,
     )

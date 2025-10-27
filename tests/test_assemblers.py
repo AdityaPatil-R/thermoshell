@@ -1,22 +1,22 @@
 import numpy as np
 # Import the required local functions
-from thermoshell.analysis.bending_model.geometry import getTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
+from thermoshell.bending_model.geometry import getTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
 from thermoshell.assembly.assemblers import ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal, ElasticGHEdges
 
-from thermoshell.analysis.material.unit_laws import (fun_grad_hess_energy_stretch_linear_elastic_edge, 
+from thermoshell.material.unit_laws import (fun_grad_hess_energy_stretch_linear_elastic_edge, 
                                          fun_grad_hess_energy_stretch_linear_elastic_edge_thermal,
                                          get_strain_stretch_edge2D3D, 
                                          grad_and_hess_strain_stretch_edge3D)
 
-from thermoshell.analysis.bending_model.geometry import (getTheta, 
+from thermoshell.bending_model.geometry import (getTheta, 
                                              gradTheta, 
                                              hessTheta)
 
-from thermoshell.analysis.bending_model.energy import (calculate_pure_bending_grad_hess, 
+from thermoshell.bending_model.energy import (calculate_pure_bending_grad_hess, 
                                            calculate_coupled_bending_grad_hess, 
                                            calculate_coupled_bending_grad_hess_thermal)
 
-from thermoshell.analysis.energy_check import fun_total_system_energy_coupled_thermal
+from thermoshell.energy_check import fun_total_system_energy_coupled_thermal
 
 
 def test_fun_total_energy_grad_hess_thermal(
