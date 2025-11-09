@@ -1,0 +1,71 @@
+├── data
+│   ├── mesh_python_circle_970nodes_scale100mm.txt
+│   ├── mesh_python_square_388nodes_scale100mm.txt
+│   └── mesh_rectangle_scaled_1215nodes_scale100mm_155mm.txt
+├── main.py
+├── output
+│   ├── output_deps_thermal_NoG.mat
+│   ├── output_deps_thermal_WithGravity.mat
+│   └── output_mesh3_WithGravity.mat
+├── src
+│   └── thermoshell
+│       ├── assembly
+│       │   ├── assemblers.py
+│       │   │   ├── Defines classes (ElasticGHEdges, ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal)
+│       │   │   ├── Assembles the global gradient and Hessian.
+│       │   │   └── Includes finite-difference check functions for verification
+│       │   └── energy_check.py
+│       │       └── Contains functions to calculate the total scalar energy of the system
+│       ├── bending_model
+│       │   ├── energy.py
+│       │   │   ├── Contains functions for calculating bending energy
+│       │   │   └── Includes pure bending and coupled bending with and without thermal effects
+│       │   └── geometry.py
+│       │       ├── Contains geometric functions for the bending model
+│       │       └── Includes calculations for dihedral angle, its gradient + Hessian, and stretch differences for coupled models
+│       ├── geometry
+│       │   ├── mesh_io.py
+│       │   │   ├── Contains the load_mesh function
+│       │   │   └── Parses a .txt mesh file to load and return node coordinates, edge connectivity, and triangle connectivity
+│       │   ├── mesh_props.py
+│       │   │   ├── Contains the calculate_edge_lengths function
+│       │   │   └── Computes and returns an array of Euclidean lengths for all edges based on coordinates and connectivity
+│       │   └── post_process.py
+│       │       ├── Contains helper functions for post-processing simulation results for beam-like structures
+│       │       └── Includes functions to calculate reaction forces, beam reactions, and end deflections
+│       ├── material
+│       │   ├── assignment.py
+│       │   │   ├── Defines functions to assign material properties to mesh edges based on spatial criteria
+│       │   │   └── Includes various transition/ramp methods like assign_thermal_strains_* and assign_youngs_modulus
+│       │   ├── bilayer.py
+│       │   │   ├── Contains the bilayer_flexural_rigidity function
+│       │   │   └── Calculates the effective flexural rigidity for a bilayer composite material
+│       │   ├── fluctuations.py
+│       │   │   ├── Contains functions to add small, spatially-varying fluctuations to the thermal strain field
+│       │   │   └── Includes one to add decaying waves inward from all boundaries and one to adds waves decaying from only the left
+│       │   └── unit_laws.py
+│       │       ├── Defines the fundamental constitutive laws for a single edge
+│       │       ├── Includes functions to calculate scalar strain and its gradient/Hessian
+│       │       └── Provides functions to compute the energy gradient and Hessian for a linear elastic edge
+│       ├── patterning
+│       │   ├── complex.py
+│       │   │   ├── Defines functions that create complex 2D boolean masks based on edge midpoints
+│       │   │   └── Inclues shapes like "C" rings, rings with spokes, stars, and composite "peanut" shapes
+│       │   └── regions.py
+│       │       └── Defines functions that return boolean masks for simple geometric regions (Rectangle, circle, etc.)
+│       ├── solver
+│       │   ├── boundary_conditions.py
+│       │   │   ├── Defines the BoundaryConditions3D class to manage fixed and free degrees of freedom for a simulation
+│       │   │   └── Provides helper functions for specific boundary conditions, like clamping nodes or time-varying displacements
+│       │   └── time_stepper.py
+│       │       ├── Defines classes for solving the system's motion (With and without considering gravity)
+│       │       └── Includes a record_step helper function to log displacements, reactions, strains, and angles at each step
+│       └── viz
+│           ├── figure_setup.py
+│           │   └── Contains new_fig, a method to create and label a new figure
+│           ├── mesh_plots.py
+│           │   └── Contains methods for 2D and 3D plots of trusses given the connectivity
+│           └── thermal_plots.py
+│               └── Contains methods to plot thermal strain edges over a custom defined range
+└── tests
+    └── test_assemblers.py

@@ -1,0 +1,43 @@
+├── README.md
+├── data
+│   ├── mesh_python_circle_970nodes_scale100mm.txt
+│   ├── mesh_python_square_388nodes_scale100mm.txt
+│   ├── mesh_rectangle_scaled_1215nodes_scale100mm_155mm.txt
+├── main.py
+├── output
+│   ├── output_deps_thermal_NoG.mat
+│   ├── output_deps_thermal_WithGravity.mat
+│   └── output_mesh3_WithGravity.mat
+├── src
+│   └── thermoshell
+│       ├── assembly
+│       │   ├── __init__.py
+│       │   └── assemblers.py
+│       ├── bending_model
+│       │   ├── energy.py
+│       │   └── geometry.py
+│       ├── energy_check.py
+│       ├── geometry
+│       │   ├── __init__.py
+│       │   ├── mesh_io.py
+│       │   ├── mesh_props.py
+│       │   └── post_process.py
+│       ├── material
+│       │   ├── assignment.py
+│       │   ├── bilayer.py
+│       │   ├── fluctuations.py
+│       │   └── unit_laws.py
+│       ├── patterning
+│       │   ├── complex.py
+│       │   └── regions.py
+│       ├── solver
+│       │   ├── __init__.py
+│       │   ├── boundary_conditions.py
+│       │   └── time_stepper.py
+│       └── viz
+│           ├── __init__.py
+│           ├── figure_setup.py
+│           ├── mesh_plots.py
+│           └── thermal_plots.py
+└── tests
+    └── test_assemblers.py

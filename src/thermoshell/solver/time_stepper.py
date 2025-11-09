@@ -1,5 +1,8 @@
 import numpy as np
 from typing import List, Callable, Tuple, Dict
+# Added for sparse matrices and solvers
+import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve
 
 # Imports from other modules (needed by record_step)
 from src.thermoshell.material.unit_laws import get_strain_stretch_edge2D3D # Needed for strain logging
@@ -35,8 +38,9 @@ class timeStepper3D:
         self.makeWeight()
 
         # Diagonal mass matrix
-        self.massMatrix   = np.zeros((self.ndof, self.ndof))
-        self.makeMassMatrix()
+        # Precompute using sparse diagonal matrix intead of np.zeros
+        # O(n) time and memory instead of O(n^2)
+        self.M_over_dt2   = sp.diags(self.massVector / (self.dt**2), format='csc')
 
         # Attach BC manager and elastic-energy model
         self.bc           = boundaryCondition
@@ -45,10 +49,8 @@ class timeStepper3D:
         
     def makeMassMatrix(self):
         """Build diagonal mass matrix M."""
-        np.fill_diagonal(self.massMatrix, self.massVector)
-        
-        # for i in range(self.ndof):
-        #     self.massMatrix[i,i] = self.massVector[i]
+        # Precomputed, so no need for np.fill_diagonal
+        pass
 
     def makeWeight(self):
         """Compute gravity‐induced forces per DOF."""
@@ -73,9 +75,6 @@ class timeStepper3D:
         # 1) Initialize and impose Dirichlet BCs
         q_new = q_guess.copy()
         q_new[self.bc.fixedIndices] = self.X0[self.bc.fixedIndices] + self.bc.fixedDOFs
-            
-        # for k in range(len(bc.fixedIndices)):
-        #     q_new[bc.fixedIndices[k]] = bc.fixedDOFs[k]
 
         # 2) Newton‐Raphson loop
         error = np.inf
@@ -86,13 +85,17 @@ class timeStepper3D:
             inertiaF = (M/dt) * (((q_new - q_old)/dt) - u_old)
             # residual & Jacobian
             R = inertiaF + gradE - Fg
-            J = (self.massMatrix/dt**2) + hessE
+            # Use precomputed matrix for jacobian rather than recalculating each time
+            # Effectively O(n) instead of O(n^2) due to producing a sparse matrix instead of a dense one
+            J = self.M_over_dt2 + hessE
             
             # restrict to freeIndex DOFs
             freeIndex = self.bc.freeIndices
             Rf   = R[freeIndex]
             Jf   = J[np.ix_(freeIndex, freeIndex)]
-            dqf  = np.linalg.solve(Jf, Rf)
+            # Sparse solver instead of dense
+            # O(n^1.5) or O(n^2) instead of O(n^3)
+            dqf  = spsolve(Jf, Rf)
             
             # update free DOFs
             q_new[freeIndex] -= dqf
@@ -138,9 +141,6 @@ class timeStepper3D_static:
         self.Fg           = np.zeros(self.ndof)
         self.makeWeight()
 
-        # Diagonal mass matrix
-        self.massMatrix   = np.zeros((self.ndof, self.ndof))
-        self.makeMassMatrix()
 
         # Attach BC manager and elastic-energy model
         self.bc           = boundaryCondition
@@ -150,10 +150,7 @@ class timeStepper3D_static:
         
     def makeMassMatrix(self):
         """Build diagonal mass matrix M."""
-        np.fill_diagonal(self.massMatrix, self.massVector)
-        
-        # for i in range(self.ndof):
-        #     self.massMatrix[i,i] = self.massVector[i]
+        pass
 
     def makeWeight(self):
         """Compute gravity‐induced forces per DOF."""
@@ -170,41 +167,33 @@ class timeStepper3D_static:
         Returns:
           q_new, u_new, a_new, flag (bool success)
         """
-        dt = self.dt
-        M  = self.massVector
         Fg = self.Fg
         X0 = self.X0
 
         # 1) Initialize and impose Dirichlet BCs
         q_new = q_guess.copy()
         q_new[self.bc.fixedIndices] = self.X0[self.bc.fixedIndices] + self.bc.fixedDOFs
-            
-        # for k in range(len(bc.fixedIndices)):
-        #     q_new[bc.fixedIndices[k]] = bc.fixedDOFs[k]
 
         # 2) Newton‐Raphson loop
         rel_error = np.inf
         for iteration in range(1, self.maxIter+1):
             # internal: gradient & Hessian
             gradE, hessE = self.elasticModel.computeGradientHessian(q_new)
-            # inertia: M*((q_new - q_old)/dt - u_old)/dt
-            # inertiaF = (M/dt) * (((q_new - q_old)/dt) - u_old)
             # residual & Jacobian
             R = gradE - Fg
             J = hessE
-            # R = inertiaF + gradE - Fg
-            # J = (self.massMatrix/dt**2) + hessE
             
             # restrict to freeIndex DOFs
             freeIndex = self.bc.freeIndices
             Rf   = R[freeIndex]
             Jf   = J[np.ix_(freeIndex, freeIndex)]
-            dqf  = np.linalg.solve(Jf, Rf)
-            
+            # Sparse solver instead of dense
+            # O(n^1.5) or O(n^2) instead of O(n^3)
+            dqf  = spsolve(Jf, Rf)
             
             qfree = q_new[freeIndex]
             rel_error = np.linalg.norm(dqf) / max(0.1, np.linalg.norm(qfree))
-            
+
             
             # update free DOFs
             q_new[freeIndex] -= dqf
@@ -215,7 +204,7 @@ class timeStepper3D_static:
             
         else:
             self.last_num_iters = self.maxIter
-            
+
         # new velocities and accelerations
         # u_new = (q_new - q_old)/dt
         # a_new = (inertiaF + gradE - Fg)/M
@@ -253,9 +242,6 @@ class timeStepper3D_static_gravity:
         self.Fg           = np.zeros(self.ndof)
         self.makeWeight()
 
-        # Diagonal mass matrix
-        self.massMatrix   = np.zeros((self.ndof, self.ndof))
-        self.makeMassMatrix()
 
         # Attach BC manager and elastic-energy model
         self.bc           = boundaryCondition
@@ -264,10 +250,7 @@ class timeStepper3D_static_gravity:
         
     def makeMassMatrix(self):
         """Build diagonal mass matrix M."""
-        np.fill_diagonal(self.massMatrix, self.massVector)
-        
-        # for i in range(self.ndof):
-        #     self.massMatrix[i,i] = self.massVector[i]
+        pass
 
     def makeWeight(self):
         """Compute gravity‐induced forces per DOF."""
@@ -284,8 +267,6 @@ class timeStepper3D_static_gravity:
         Returns:
           q_new, u_new, a_new, flag (bool success)
         """
-        dt = self.dt
-        M  = self.massVector
         Fg = self.Fg
         X0 = self.X0
 
@@ -293,36 +274,29 @@ class timeStepper3D_static_gravity:
         q_new = q_guess.copy()
         q_new[self.bc.fixedIndices] = self.X0[self.bc.fixedIndices] + self.bc.fixedDOFs
             
-        # for k in range(len(bc.fixedIndices)):
-        #     q_new[bc.fixedIndices[k]] = bc.fixedDOFs[k]
-
         # 2) Newton‐Raphson loop
         error = np.inf
         for iteration in range(1, self.maxIter+1):
             # internal: gradient & Hessian
             gradE, hessE = self.elasticModel.computeGradientHessian(q_new)
-            # inertia: M*((q_new - q_old)/dt - u_old)/dt
-            inertiaF = (M/dt) * (((q_new - q_old)/dt) - u_old)
             # residual & Jacobian
             R = gradE - Fg
             J = hessE
-            # R = inertiaF + gradE - Fg
-            # J = (self.massMatrix/dt**2) + hessE
             
             # restrict to freeIndex DOFs
             freeIndex = self.bc.freeIndices
             Rf   = R[freeIndex]
             Jf   = J[np.ix_(freeIndex, freeIndex)]
-            dqf  = np.linalg.solve(Jf, Rf)
+            # Sparse solver instead of dense
+            # O(n^1.5) or O(n^2) instead of O(n^3)
+            dqf  = spsolve(Jf, Rf)
             
             # update free DOFs
             q_new[freeIndex] -= dqf
             
             error = np.linalg.norm(dqf)
-            # print(f"  Newton iter={iteration}: error={error:.4e}")
             if error < self.qtol:
                 break
-            
         # new velocities and accelerations
         # u_new = (q_new - q_old)/dt
         # a_new = (inertiaF + gradE - Fg)/M
