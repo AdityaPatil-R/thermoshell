@@ -112,9 +112,13 @@ Here are some sample results from the simulation, located in the `figures/` dire
 
 Shows the final equilibrium shapes for three different initial mesh patterns.
 
-![Final shape for Mesh 1](figures/Mesh1.png)
-![Final shape for Mesh 2](figures/Mesh2.png)
-![Final shape for Mesh 3](figures/Mesh3.png)
+<table>
+  <tr>
+    <td><img src="figures/Mesh1.png" alt="Final shape for Mesh 1" width="100%"></td>
+    <td><img src="figures/Mesh2.png" alt="Final shape for Mesh 2" width="100%"></td>
+    <td><img src="figures/Mesh3.png" alt="Final shape for Mesh 3" width="100%"></td>
+  </tr>
+</table>
 
 ---
 
