@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Callable, Tuple, Dict
-from src.thermoshell.bending_model.geometry import getTheta, gradTheta, hessTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
+from src.ThermalDES.bending_model.geometry import getTheta, gradTheta, hessTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
 
 def calculate_pure_bending_energy(x0, 
                                   x1=None, 

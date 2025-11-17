@@ -1,8 +1,8 @@
 import numpy as np
 # Import the required local functions
-from src.thermoshell.material.unit_laws import get_strain_stretch_edge2D3D
-from src.thermoshell.bending_model.geometry import getTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
-from src.thermoshell.assembly.assemblers import ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal
+from src.ThermalDES.material.unit_laws import get_strain_stretch_edge2D3D
+from src.ThermalDES.bending_model.geometry import getTheta, calculate_stretch_difference_grad_hess, calculate_stretch_difference_grad_hess_thermal
+from src.ThermalDES.assembly.assemblers import ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal
 
 def fun_total_system_energy_coupled(
         q: np.ndarray,

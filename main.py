@@ -7,41 +7,46 @@ from typing import Tuple, Callable
 from functools import partial
 from collections import Counter, defaultdict
 from itertools import combinations
+import random
 
-from src.thermoshell.geometry.mesh_io import load_mesh
-from src.thermoshell.geometry.mesh_props import calculate_edge_lengths 
-from src.thermoshell.viz.figure_setup import new_fig
-from src.thermoshell.viz.mesh_plots import plot_truss_3d 
-from src.thermoshell.viz.thermal_plots import (
+from src.ThermalDES.geometry.mesh_io import load_mesh
+from src.ThermalDES.geometry.mesh_props import calculate_edge_lengths 
+from src.ThermalDES.viz.figure_setup import new_fig
+from src.ThermalDES.viz.mesh_plots import (
+    plot_truss_3d, 
+    plot_truss_3d_path_history,
+    plot_truss_3d_history_overlay
+)
+from src.ThermalDES.viz.thermal_plots import (
     plot_thermal_strain_edges,
     plot_thermal_strain_edges_CustomRange
 )
-from src.thermoshell.assembly.assemblers import (
+from src.ThermalDES.assembly.assemblers import (
     ElasticGHEdgesCoupledThermal,
     FDM_ElasticGHEdges, 
     FDM_ElasticGHEdgesCoupled,
     FDM_ElasticGHEdgesCoupledThermal
 )
-from src.thermoshell.material.bilayer import bilayer_flexural_rigidity
-from src.thermoshell.material.assignment import (
+from src.ThermalDES.material.bilayer import bilayer_flexural_rigidity
+from src.ThermalDES.material.assignment import (
     assign_thermal_strains_contour,
     assign_youngs_modulus_v3 
 )
-from src.thermoshell.material.fluctuations import add_boundary_fluctuations
-from src.thermoshell.patterning.regions import (
+from src.ThermalDES.material.fluctuations import add_boundary_fluctuations
+from src.ThermalDES.patterning.regions import (
     circle_six_arms_region,
     square_X_region
 )
-from src.thermoshell.patterning.complex import whole_peanut_region
-from src.thermoshell.assembly.assemblers import (
+from src.ThermalDES.patterning.complex import whole_peanut_region
+from src.ThermalDES.assembly.assemblers import (
     ElasticGHEdgesCoupledThermal,
     )
-from src.thermoshell.solver.boundary_conditions import (
+from src.ThermalDES.solver.boundary_conditions import (
     BoundaryConditions3D,
     fun_BC_3D_hold_center,
     fun_BC_peanut 
 )
-from src.thermoshell.solver.time_stepper import timeStepper3D_static, record_step
+from src.ThermalDES.solver.time_stepper import timeStepper3D_static, record_step
 from tests.test_assemblers import test_fun_total_energy_grad_hess_thermal, test_ElasticGHEdges
 
 
@@ -175,6 +180,10 @@ print(f"Number of nodes:     {NP_total}")
 print(f"Number of edges:     {Nedges}")
 print(f"Number of triangles: {Ntriangles}")
 
+random_node_id = random.randint(0, NP_total - 1)
+print(f"Highlighting random node: {random_node_id}")
+
+q_full_history = []
 
 print("Reference edge lengths:")
 L0 = calculate_edge_lengths(X0_4columns, ConnectivityMatrix_line)
@@ -816,14 +825,6 @@ if iTest ==1:
     test_fun_total_energy_grad_hess_thermal(plt, elastic_model1, q1, iplot=1)
 
 
-# 3D time‐stepper
-
-
-
-# totalMass   = 0.001164      # total mass of the structure
-# massVector  = np.full(Ndofs, totalMass/NP_total)  # lumped equally per node
-
-
 if iMesh ==1:
     NodalMass=1e-7
 
@@ -866,19 +867,9 @@ stress_history = np.zeros((n_record, Nedges))
 theta_history  = np.zeros((n_record, n_hinges))
 length_history = np.zeros((n_record, Nedges))
 
-
-# stepper3D = timeStepper3D(
-#     massVector, dt, qtol, maxIter,
-#     g_vec, bc1, elastic_model1, X0)
-
 stepper3D = timeStepper3D_static(
     massVector, dt, qtol, maxIter,
     g_vec, bc1, elastic_model1, X0)
-
-# stepper3D = timeStepper3D_static_gravity(
-#     massVector, dt, qtol, maxIter,
-#     g_vec, bc1, elastic_model1, X0)
-
 
 q_old = X0.copy()               # start at undeformed reference
 u_old = np.zeros(Ndofs)         # zero initial velocity
@@ -899,6 +890,7 @@ record_step(
     stress_history=stress_history,
     theta_history=theta_history)
 
+q_full_history.append(q_old.copy())
 
 print("---Netwon iteration starts---")
 
@@ -918,17 +910,6 @@ while True:
     elastic_model1.eps_th = eps_th_vector * (t_next/totalTime)
     print(f"t = {t_next:.8f}, g={stepper3D.g}\n") #" eps_th = {elastic_model1.eps_th}")
 
-    # if iMesh == 0:
-    #     fun_BC_evolution_example_5nodes(bc1, X0, NP_total, t_next, 1e-8)
-
-    # if iMesh in (1, 2):
-    #     fixedNodes = fun_BC_3D_hold_center(bc1, X0, NP_total, half_x=0.15, half_y=0.15)
-
-    # if iMesh == 3:
-    #     fun_BC_beam_PointLoad(bc1, X0, NP_total, t=t_next, x_thresh=0.21, disp_right=-0.001, tol=1e-8)
-    
-    # if iMesh == 4:
-    #     fun_BC_4nodes(bc1)
     if iMesh == 1:
         fixedNodes = fun_BC_3D_hold_center(bc1, X0, NP_total, half_x=0.01, half_y=0.01)
 
@@ -957,13 +938,6 @@ while True:
         fixedNodes = fun_BC_3D_hold_center(bc1, X0, NP_total, half_x=0.01, half_y=0.01)
 
             
-    # if iMesh == 9:
-    #     ## rectangle with a stripe 
-    #     fixedNodes = fun_BC_peanut(bc1, X0, NP_total,
-    #                          x_min = 0.05, x_max = 0.25,
-    #                          y_min = 0.0, y_max = ys.max(),
-    #                          node_region_fn = stripe_region)
-        
     if iPrint:
         fixedVals, fixedIdxs, freeIdxs = bc1.getBoundaryConditions()
         print("Fixed DOF indices: ", fixedIdxs)
@@ -973,8 +947,6 @@ while True:
         
 
     q_new, converged = stepper3D.simulate(q_old, q_old, u_old, a_old)
-    # q_new, u_new, a_new, converged = stepper3D.simulate(
-    #     q_old, q_old, u_old, a_old)
     
     if not converged:
         if dt > dt_min:
@@ -1004,6 +976,8 @@ while True:
         step += 1
         # q_old, u_old, a_old = q_new.copy(), u_new.copy(), a_new.copy()
         q_old = q_new.copy()
+
+        q_full_history.append(q_old.copy())
         
         step_log.append(step)
         time_log.append(t)
@@ -1033,7 +1007,6 @@ while True:
     
 
 print("--- Thermal actuation completed ---")
-
 plot_truss_3d(
     q_old,
     ConnectivityMatrix_line,
@@ -1118,6 +1091,9 @@ for k in range(1, relax_steps+1):
 
     # 4) advance state
     q_old = q_new.copy()
+
+    q_full_history.append(q_old.copy())
+
     step_log.append(step+k)
     time_log.append(t+t_rel)
     
@@ -1140,13 +1116,13 @@ for k in range(1, relax_steps+1):
         
 
 print("Gravity ramp‐down completed")
-
 plot_truss_3d(
     q_old,
     ConnectivityMatrix_line,
     NP_total=NP_total,
     title=f"t = {t:.8f} s",
     show_labels=False)
+
 
 mdict = {
     'X0_4columns':             X0_4columns,
@@ -1180,3 +1156,20 @@ print("Data saved at ", ", ".join(mdict.keys()))
 
 end = time.perf_counter()
 print(f"Elapsed time: {end - start:.4f} s")
+
+print(f"\n--- Generating final path visualization for Node {random_node_id} ---")
+plot_truss_3d_path_history(
+    q_history=q_full_history,
+    connectivity=ConnectivityMatrix_line,
+    highlight_node_id=random_node_id,
+    NP_total=NP_total,
+    title=f"Sample Node Deformation Path"
+)
+
+print(f"\n--- Generating overlay plot of all {len(q_full_history)} states ---")
+plot_truss_3d_history_overlay(
+    q_history=q_full_history,
+    connectivity=ConnectivityMatrix_line,
+    NP_total=NP_total,
+    title=f"Deformation History"
+)

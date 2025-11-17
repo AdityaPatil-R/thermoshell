@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Callable, Tuple, Dict
-from src.thermoshell.material.unit_laws import get_strain_stretch_edge2D3D, grad_and_hess_strain_stretch_edge3D
+from src.ThermalDES.material.unit_laws import get_strain_stretch_edge2D3D, grad_and_hess_strain_stretch_edge3D
 
 def signedAngle(u=None,
                 v=None,

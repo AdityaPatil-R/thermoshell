@@ -8,7 +8,7 @@
 │   ├── output_deps_thermal_WithGravity.mat
 │   └── output_mesh3_WithGravity.mat
 ├── src
-│   └── thermoshell
+│   └── ThermalDES
 │       ├── assembly
 │       │   ├── assemblers.py
 │       │   │   ├── Defines classes (ElasticGHEdges, ElasticGHEdgesCoupled, ElasticGHEdgesCoupledThermal)
